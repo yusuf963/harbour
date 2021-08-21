@@ -1,18 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const Category = require('../models/category');
+const mongoose = require('mongoose');
 
 // Get all categories
 router.get('/', async (req, res) => {
   const categoryList = await Category.find();
   if (!categoryList) {
-    res.status(404).send('Not found');
+    res.status(404).json({ sucess: false, message: 'Not found' });
   }
   res.send(categoryList);
 });
 
 // Get category by id
 router.get('/:id', async (req, res) => {
+  // Get id from url mongoose id validation
+  idValidation(req, res);
   const category = await Category.findById(req.params.id);
   if (!category) {
     res.status(404).send('Not found');
@@ -42,6 +45,8 @@ router.post('/', async (req, res) => {
 
 //delete  one category
 router.delete('/:id', (req, res) => {
+  // Get id from url mongoose id validation
+  idValidation(req, res);
   Category.findByIdAndRemove(req.params.id)
     .then((category) => {
       if (category) {
@@ -61,6 +66,8 @@ router.delete('/:id', (req, res) => {
 
 //update one category
 router.put('/:id', async (req, res) => {
+  // Get id from url mongoose id validation
+  idValidation(req, res);
   const category = await Category.findByIdAndUpdate(
     req.params.id,
     {
@@ -77,15 +84,10 @@ router.put('/:id', async (req, res) => {
 });
 
 //count category
-router.get('/count', async (req, res) => {
-  try {
-    const count = await Category.countDocuments((count) => {
-      return count;
-    });
-    res.status(200).json({ categoryCount: count });
-  } catch (error) {
-    return res.status(500).send(error);
-  }
+router.get('/get/count', async (req, res) => {
+  const categoryCount = await Category.countDocuments((count) => count);
+  if (!categoryCount) res.status(404).send('Not found');
+  res.status(200).json({ categoryCount: categoryCount });
 });
 
 module.exports = router;
