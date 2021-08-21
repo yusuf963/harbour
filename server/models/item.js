@@ -33,11 +33,11 @@ const itemSchema = mongoose.Schema({
   },
 });
 
-// itemSchema.virtual('_id').get(function () {
-//   return this._id.toString();
-// })
-// itemSchema.set('toJSON',{
-//   virtuals: true
-// })
+itemSchema.virtual('id').get(function () {
+  return this._id.toString();
+});
+itemSchema.set('toJSON', {
+  virtuals: true,
+});
 const Item = mongoose.model('Item', itemSchema);
 module.exports = Item;
