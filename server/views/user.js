@@ -13,6 +13,8 @@ router.get('/', async (req, res) => {
 
 //get one user
 router.get('/:id', async (req, res) => {
+  // Get id from url mongoose id validation
+  idValidation(req, res);
   const user = await User.findById(req.params.id).select('-password');
   if (!user) {
     return res.status(404).send('User not found');
@@ -22,6 +24,8 @@ router.get('/:id', async (req, res) => {
 
 //deletes a user
 router.delete('/:id', (req, res) => {
+  // Get id from url mongoose id validation
+  idValidation(req, res);
   User.findByIdAndRemove(req.params.id)
     .then((user) => {
       if (user) {
@@ -68,6 +72,8 @@ router.post('/', async (req, res) => {
 
 //update a user
 router.put('/:id', async (req, res) => {
+  // Get id from url mongoose id validation
+  idValidation(req, res);
   const user = await User.findByIdAndUpdate(
     req.params.id,
     {
@@ -88,15 +94,10 @@ router.put('/:id', async (req, res) => {
 });
 
 //count users
-router.get('/count', async (req, res) => {
-  try {
-    const count = await User.countDocuments((count) => {
-      return count;
-    });
-    res.status(200).json({ userCount: count });
-  } catch (error) {
-    return res.status(500).send(error);
-  }
+router.get('/get/count', async (req, res) => {
+  const userCount = await User.countDocuments((count) => count);
+  if (!userCount) res.status(4.4).send('No users found');
+  res.status(200).json({ userCount: userCount });
 });
 
 module.exports = router;
