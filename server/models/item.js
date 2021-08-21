@@ -1,5 +1,5 @@
-const mongoos = require('mongoose');
-const itemSchema = mongoos.Schema({
+const mongoose = require('mongoose');
+const itemSchema = mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -16,21 +16,28 @@ const itemSchema = mongoos.Schema({
     type: [String],
   },
   category: {
-    type: mongoos.Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
     required: true,
   },
   rate: {
     type: Number,
   },
-  isFeatured:{
+  isFeatured: {
     type: Boolean,
     default: false,
-},
+  },
   dateCraeted: {
     type: Date,
     default: Date.now,
   },
 });
-const Item = mongoos.model('Item', itemSchema);
+
+// itemSchema.virtual('_id').get(function () {
+//   return this._id.toString();
+// })
+// itemSchema.set('toJSON',{
+//   virtuals: true
+// })
+const Item = mongoose.model('Item', itemSchema);
 module.exports = Item;

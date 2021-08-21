@@ -1,7 +1,7 @@
 const express = require('express');
 require('dotenv/config');
 const morgan = require('morgan');
-const mongoos = require('mongoose');
+const mongoose = require('mongoose');
 const cors = require('cors');
 
 //import routes files
@@ -19,10 +19,11 @@ const api = process.env.API_URL;
 // API routes
 app.use('/items', itemRouter);
 app.use('/users', userRouter);
-app.use('/category',categoryRouter)
+app.use('/category', categoryRouter);
 
 // Connect to MongoDB
-mongoos
+mongoose.set('useCreateIndex', true);
+mongoose
   .connect(process.env.DB_CONNECTION_STRING, {
     useUnifiedTopology: true,
     useNewUrlParser: true,

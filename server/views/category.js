@@ -22,6 +22,11 @@ router.get('/:id', async (req, res) => {
 
 // Create new category
 router.post('/', async (req, res) => {
+  // Check if category already exists
+  const checkingCategory = await Category.findOne({ name: req.body.name });
+  if (checkingCategory) {
+    res.status(400).send('Category already exists');
+  }
   let category = new Category({
     name: req.body.name,
     color: req.body.color,
@@ -70,4 +75,17 @@ router.put('/:id', async (req, res) => {
   }
   res.send(category);
 });
+
+//count category
+router.get('/count', async (req, res) => {
+  try {
+    const count = await Category.countDocuments((count) => {
+      return count;
+    });
+    res.status(200).json({ categoryCount: count });
+  } catch (error) {
+    return res.status(500).send(error);
+  }
+});
+
 module.exports = router;
