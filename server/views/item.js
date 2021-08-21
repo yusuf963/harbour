@@ -14,8 +14,14 @@ const idValidation = (req, res) => {
 
 // Get all items
 router.get('/', async (req, res) => {
+  // request items by category name
+  let filter = {};
+  if (req.query.categories) {
+    filter = { category: req.query.categories.split(',') };
+  }
+  console.log(filter);
   try {
-    const itemList = await Item.find();
+    const itemList = await Item.find(filter);
     if (!itemList) {
       return res.status(404).send('No items found');
     }
@@ -26,6 +32,7 @@ router.get('/', async (req, res) => {
 });
 // Get item by id
 router.get('/:id', async (req, res) => {
+  // Get id from url mongoose id validation
   idValidation(req, res);
   const item = await Item.findById(req.params.id).populate('category');
   if (!item) {
@@ -54,10 +61,7 @@ router.post('/', async (req, res) => {
 //delete item
 router.delete('/:id', async (req, res) => {
   // Get id from url mongoose id validation
-  const idValidation = monngoose.isValidObjectId(req.params.id);
-  if (!idValidation) {
-    return res.status(400).send('Invalid id');
-  }
+  idValidation(req, res);
   const item = await Item.findByIdAndDelete(req.params.id);
   if (!item) return res.status(404).send('Item not found');
   res.status(200).json(item);
@@ -66,10 +70,7 @@ router.delete('/:id', async (req, res) => {
 //update item
 router.put('/:id', async (req, res) => {
   // Get id from url mongoose id validation
-  const idValidation = monngoose.isValidObjectId(req.params.id);
-  if (!idValidation) {
-    return res.status(400).send('Invalid id');
-  }
+  idValidation(req, res);
   const item = await Item.findByIdAndUpdate(
     req.params.id,
     {
@@ -86,15 +87,21 @@ router.put('/:id', async (req, res) => {
 });
 
 //count the number of items is listed
-router.get('/count', async (req, res) => {
-  try {
-    const count = await Item.countDocuments((count) => {
-      return count;
-    });
-    res.status(200).json({ itemCount: count });
-  } catch (error) {
-    return res.status(500).send(error);
-  }
+router.get('/get/count', async (req, res) => {
+  const itemCount = await Item.countDocuments((count) => count);
+  if (!itemCount) return res.status(404).send('No items found');
+  res.status(200).json({ itemCount: itemCount });
+});
+
+//get featured item and limitem count
+router.get('/get/featured/:count', async (req, res) => {
+  const count = req.params.count ? req.params.count : 0;
+  const featuredItem = await Item.find()
+    .where('isFeatured')
+    .equals(true)
+    .limit(+count);
+  if (!featuredItem) return res.status(404).send('No items found');
+  res.status(200).json(featuredItem);
 });
 
 module.exports = router;
