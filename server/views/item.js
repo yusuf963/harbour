@@ -2,16 +2,34 @@ const express = require('express');
 const router = express.Router();
 const Item = require('../models/item');
 const Category = require('../models/category');
-const mongoose = require('mongoose');
+const multer = require('multer');
 const idValidation = require('../helpers/checkid');
 
-// mongoose id validation, custom function, Get id from url mongoose id validation
-// const idValidation = (req, res) => {
-//   const idValidation = mongoose.isValidObjectId(req.params.id);
-//   if (!idValidation) {
-//     return res.status(400).send('Invalid id');
-//   }
-// };
+//stor asset/imgs
+const FILE_TYPE_MAP = {
+  'image/png': 'png',
+  'image/jpeg': 'jpeg',
+  'image/jpg': 'jpg',
+};
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const isValid = FILE_TYPE_MAP[file.mimetype];
+    let uploadError = new Error('invalid image type');
+
+    if (isValid) {
+      uploadError = null;
+    }
+    cb(uploadError, 'public/uploads');
+  },
+  filename: function (req, file, cb) {
+    const fileName = file.originalname.split(' ').join('-');
+    const extension = FILE_TYPE_MAP[file.mimetype];
+    cb(null, `${fileName}-${Date.now()}.${extension}`);
+  },
+});
+
+const uploadOptions = multer({ storage: storage });
 
 // Get all items
 router.get('/', async (req, res) => {
@@ -43,15 +61,23 @@ router.get('/:id', async (req, res) => {
 });
 
 //create item
-router.post('/', async (req, res) => {
+router.post('/', uploadOptions.single('image'), async (req, res) => {
   const category = await Category.findById(req.body.category);
   if (!category) return res.status(404).send('Category not found');
+
+  const file = req.file;
+  if (!file) return res.status(400).send('No image in the request');
+
+  const fileName = file.filename;
+  const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`;
 
   let item = new Item({
     name: req.body.name,
     description: req.body.description,
+    image: `${basePath}${fileName}`,
+    price: req.body.price,
     category: req.body.category,
-    image: req.body.image,
+    rate: req.body.rate,
     isFeatured: req.body.isFeatured,
   });
   item = await item.save();
@@ -69,23 +95,67 @@ router.delete('/:id', async (req, res) => {
 });
 
 //update item
-router.put('/:id', async (req, res) => {
+router.put('/:id', uploadOptions.single('image'), async (req, res) => {
   // Get id from url mongoose id validation
   idValidation(req, res);
-  const item = await Item.findByIdAndUpdate(
+  //check category if its valid/ found
+  const category = await Category.findById(req.body.category);
+  if (!category) return res.status(404).send('Category not found');
+
+  //check if the item excist
+  const item = await Item.findById(req.params.id);
+  if (!item) return res.status(400).send('item not found');
+  const file = req.file;
+  let imagePath;
+  if (file) {
+    const fileName = file.filename;
+    const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`;
+    imagePath = `${basePath}${fileName}`;
+  } else {
+    imagePath = item.image;
+  }
+  const updatedItem = await Item.findByIdAndUpdate(
     req.params.id,
     {
       name: req.body.name,
       description: req.body.description,
+      image: imagePath,
+      price: req.body.price,
       category: req.body.category,
-      image: req.body.image,
+      rate: req.body.rate,
       isFeatured: req.body.isFeatured,
     },
     { new: true }
   );
-  if (!item) return res.status(404).send('Item not found');
+  if (!updatedItem) return res.status(404).send('Item not found');
   res.status(200).json(item);
 });
+
+//upload multi images
+router.put(
+  '/gallary/:id',
+  uploadOptions.array('images', 10),
+  async (req, res) => {
+    idValidation();
+    const files = req.files;
+    let imagePaths = [];
+    const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`;
+    if (files) {
+      files.map((file) => {
+        imagesPaths.push(`${basePath}${file.fileName}`);
+      });
+    }
+    const item = await Item.findByIdAndUpdate(
+      req.params.id,
+      {
+        images: imagesPaths,
+      },
+      { new: true }
+    );
+    if (!item) return res.status(404).send('Item not found');
+    res.status(200).json(item);
+  }
+);
 
 //count the number of items is listed
 router.get('/get/count', async (req, res) => {
@@ -105,4 +175,5 @@ router.get('/get/featured/:count', async (req, res) => {
   res.status(200).json(featuredItem);
 });
 
+const upload = multer({ storage: storage });
 module.exports = router;

@@ -19,7 +19,7 @@ router.get('/:id', async (req, res) => {
   idValidation(req, res);
   const order = await Order.findById(req.params.id)
     .populate('user', ['firstName', 'lastName', 'email'])
-    .populate({path : 'orderItem', populate: 'item'});
+    .populate({ path: 'orderItem', populate: 'item' });
   if (!order)
     return res.status(404).json({ success: false, message: 'NO Orders found' });
   res.status(200).send(order);
@@ -40,13 +40,28 @@ router.post('/', async (req, res) => {
   );
   //resolve the promis
   const orderItemsIdsResolved = await orderItemsIds;
+
+  const totalPrices = await Promise.all(
+    orderItemsIdsResolved.map(async (orderItemId) => {
+      const orderItem = await OrderItem.findById(orderItemId).populate(
+        'item',
+        'price'
+      );
+      const totalPrice = orderItem.item.price * orderItem.quantity;
+      return totalPrice;
+    })
+  );
+  console.log(totalPrices);
+
+  const totalPrice = totalPrices.reduce((a, b) => a + b, 0);
+
   let order = new Order({
     orderItem: orderItemsIdsResolved,
     shippingAddress1: req.body.shippingAddress1,
     shippingAddress2: req.body.shippingAddress2,
     phone: req.body.phone,
     status: req.body.status,
-    totalPrice: req.body.totalPrice,
+    totalPrice: totalPrice,
     user: req.body.user,
   });
   order = await order.save();
@@ -89,6 +104,42 @@ router.delete('/:id', (req, res) => {
     .catch((err) => {
       return res.status(500).json({ success: false, error: err });
     });
+});
+
+// get total salse
+router.get('/get/totalsales', async (req, res) => {
+  const total = await Order.aggregate([
+    { $group: { _id: null, totalsales: { $sum: '$totalPrice' } } },
+  ]);
+  if (!total)
+    return res.status(400).send('The order salse can not be generated');
+  // because mongoose can not return any agreggated group without an ID, hoever we can pop the unnecessary id  and return only the business logic
+  res.send({ totalsales: total.pop().totalsales });
+});
+
+//count the number of orders
+router.get('/get/count', async (req, res) => {
+  const orderCount = await Order.countDocuments((count) => count);
+  if (!orderCount) return res.status(404).send('No items found');
+  res.status(200).json({ orderCount: orderCount });
+});
+
+//history of order for each user
+//get all orders
+router.get('/get/userorder/:userid', async (req, res) => {
+  console.log(req.body);
+  const userOrderList = await Order.find({ user: req.params.userid })
+    .populate({
+      path: 'orderItem',
+      populate: {
+        path: 'item',
+        populate: 'category',
+      },
+    })
+    .sort({ dateOrderd: -1 });
+  if (!userOrderList)
+    return res.status(404).json({ success: false, message: 'NO Orders found' });
+  res.status(200).send(userOrderList);
 });
 
 module.exports = router;

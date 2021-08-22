@@ -2,24 +2,26 @@ const expressJwt = require('express-jwt');
 
 function authJwt() {
   const secret = process.env.SECRET_KEY;
-  return expressJwt({ secret, algorithms: ['HS256'],
-  isRevoked: isRevoked
-}).unless({
+  return expressJwt({
+    secret,
+    algorithms: ['HS256'],
+    isRevoked: isRevoked,
+  }).unless({
     path: [
-      { url: /\items(.*)/, methods: ['GET', 'OPTION'] },
+      // { url: /\public\/upload(.*)/, methods: ['GET', 'OPTION'] },
+      // { url: /\items(.*)/, methods: ['GET', 'OPTION'] },
       '/users/login',
       '/users/register',
     ],
   });
 }
 
-
-//admin only can post delete and update 
+//admin only can post delete and update
 async function isRevoked(req, payload, done) {
-  if(!payload.isAdmin){
-    done(null,true)
+  if (!payload.isAdmin) {
+    done(null, true);
   }
-  done()
+  done();
 }
 module.exports = authJwt;
 
