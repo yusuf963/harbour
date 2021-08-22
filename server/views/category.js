@@ -2,6 +2,15 @@ const express = require('express');
 const router = express.Router();
 const Category = require('../models/category');
 const mongoose = require('mongoose');
+const idValidation = require('../helpers/checkid');
+
+// mongoose id validation, custom function, Get id from url mongoose id validation
+// const idValidation = (req, res) => {
+//   const idValidation = mongoose.isValidObjectId(req.params.id);
+//   if (!idValidation) {
+//     return res.status(400).send('Invalid id');
+//   }
+// };
 
 // Get all categories
 router.get('/', async (req, res) => {

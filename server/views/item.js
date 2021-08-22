@@ -2,15 +2,16 @@ const express = require('express');
 const router = express.Router();
 const Item = require('../models/item');
 const Category = require('../models/category');
-const monngoose = require('mongoose');
+const mongoose = require('mongoose');
+const idValidation = require('../helpers/checkid');
 
 // mongoose id validation, custom function, Get id from url mongoose id validation
-const idValidation = (req, res) => {
-  const idValidation = monngoose.isValidObjectId(req.params.id);
-  if (!idValidation) {
-    return res.status(400).send('Invalid id');
-  }
-};
+// const idValidation = (req, res) => {
+//   const idValidation = mongoose.isValidObjectId(req.params.id);
+//   if (!idValidation) {
+//     return res.status(400).send('Invalid id');
+//   }
+// };
 
 // Get all items
 router.get('/', async (req, res) => {
@@ -34,7 +35,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   // Get id from url mongoose id validation
   idValidation(req, res);
-  const item = await Item.findById(req.params.id).populate('category');
+  const item = await Item.findById(req.params.id);
   if (!item) {
     return res.status(404).send('No item found');
   }

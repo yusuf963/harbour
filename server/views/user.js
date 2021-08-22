@@ -1,6 +1,17 @@
 const express = require('express');
 const User = require('../models/user');
+const bycrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
+const idValidation = require('../helpers/checkid')
+
+// mongoose id validation, custom function, Get id from url mongoose id validation
+// const idValidation = (req, res) => {
+//   const idValidation = mongoose.isValidObjectId(req.params.id);
+//   if (!idValidation) {
+//     return res.status(400).send('Invalid id');
+//   }
+// };
 
 // GET All Users
 router.get('/', async (req, res) => {
@@ -13,7 +24,7 @@ router.get('/', async (req, res) => {
 
 //get one user
 router.get('/:id', async (req, res) => {
-  // Get id from url mongoose id validation
+  //Get id from url mongoose id validation
   idValidation(req, res);
   const user = await User.findById(req.params.id).select('-password');
   if (!user) {
@@ -41,8 +52,34 @@ router.delete('/:id', (req, res) => {
     });
 });
 
+//update a user
+router.put('/:id', async (req, res) => {
+  // Get id from url mongoose id validation
+  idValidation(req, res);
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    {
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      email: req.body.email,
+      password: req.body.password,
+      address: req.body.address,
+      postcode: req.body.postcode,
+      city: req.body.city,
+      phone: req.body.phone,
+    },
+    { new: true }
+  );
+  if (!user) {
+    res.status(404).send('User not found');
+  }
+  res.send(user);
+});
+
 //Create a new user
-router.post('/', async (req, res) => {
+router.post('/register', async (req, res) => {
+  const saltString = process.env.SALT_KEY;
+  // console.log(salt);
   //check if the user already exists
   const checkingUser = await User.findOne({ email: req.body.email });
   if (checkingUser) {
@@ -53,7 +90,7 @@ router.post('/', async (req, res) => {
     firstName: req.body.firstName,
     lastName: req.body.lastName,
     email: req.body.email,
-    password: req.body.password,
+    password: bycrypt.hashSync(req.body.password, 10),
     address: req.body.address,
     postcode: req.body.postcode,
     city: req.body.city,
@@ -69,30 +106,21 @@ router.post('/', async (req, res) => {
     });
   }
 });
-
-//update a user
-router.put('/:id', async (req, res) => {
-  // Get id from url mongoose id validation
-  idValidation(req, res);
-  const user = await User.findByIdAndUpdate(
-    req.params.id,
-    {
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      email: req.body.email,
-      password: req.body.password,
-      address: req.body.address,
-      postcode: req.body.postcode,
-      city: req.body.city,
-    },
-    { new: true }
-  );
+// login
+router.post('/login', async (req, res) => {
+  const secret = process.env.SECRET_KEY;
+  const user = await User.findOne({ email: req.body.email });
   if (!user) {
-    res.status(404).send('User not found');
+    return res.status(404).send('Hmm, User not found');
   }
-  res.send(user);
+  if (!bycrypt.compareSync(req.body.password, user.password)) {
+    return res.status(401).send('Wrong password');
+  }
+  const token = jwt.sign({ id: user.id, isAdmin: user.isAdmin }, secret, {
+    expiresIn: '1d',
+  });
+  res.status(200).send({ user: user, token: token });
 });
-
 //count users
 router.get('/get/count', async (req, res) => {
   const userCount = await User.countDocuments((count) => count);

@@ -38,6 +38,9 @@ const userSchema = new mongoose.Schema({
     minlength: 6,
     maxlength: 255,
   },
+  phone: {
+    type: String,
+  },
   postcode: {
     type: String,
     required: true,
@@ -47,8 +50,14 @@ const userSchema = new mongoose.Schema({
   city: {
     type: String,
     required: true,
-  }
+  },
 });
 
+userSchema.virtual('id').get(function () {
+  return this._id.toHexString();
+});
+userSchema.set('toJSON', {
+  virtuals: true,
+});
 const User = mongoose.model('User', userSchema);
 module.exports = User;
