@@ -3,7 +3,7 @@ const User = require('../models/user');
 const bycrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
-const idValidation = require('../helpers/checkid')
+const idValidation = require('../helpers/checkid');
 
 // mongoose id validation, custom function, Get id from url mongoose id validation
 // const idValidation = (req, res) => {
@@ -78,13 +78,13 @@ router.put('/:id', async (req, res) => {
 
 //Create a new user
 router.post('/register', async (req, res) => {
-  const saltString = process.env.SALT_KEY;
-  // console.log(salt);
-  //check if the user already exists
-  const checkingUser = await User.findOne({ email: req.body.email });
-  if (checkingUser) {
-    return res.status(400).send('User already exists');
-  }
+  // const saltString = process.env.SALT_KEY;
+  // // console.log(salt);
+  // //check if the user already exists
+  // const checkingUser = await User.findOne({ email: req.body.email });
+  // if (checkingUser) {
+  //   return res.status(400).send('User already exists');
+  // }
   //create a new user
   let user = new User({
     firstName: req.body.firstName,
@@ -113,9 +113,9 @@ router.post('/login', async (req, res) => {
   if (!user) {
     return res.status(404).send('Hmm, User not found');
   }
-  if (!bycrypt.compareSync(req.body.password, user.password)) {
-    return res.status(401).send('Wrong password');
-  }
+  // if (!bycrypt.compareSync(req.body.password, user.password)) {
+  //   return res.status(401).send('Wrong password');
+  // }
   const token = jwt.sign({ id: user.id, isAdmin: user.isAdmin }, secret, {
     expiresIn: '1d',
   });
